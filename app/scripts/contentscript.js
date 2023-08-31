@@ -7,8 +7,8 @@
  *		Translate comments	 
  */
 
-// 定数
-const SP_BADGES = ['🚧','🏁','🚩','0.25','0.5','1','2','3','5','7']
+// Constants
+const SP_BADGES = ['🚧', '🏁', '🚩', '0.25','0.5','1','2','3','5','7']
 const badgeStyle = {
     background: '#252628',
     borderRadius: '2px',
@@ -37,156 +37,113 @@ const clearBadgeColor = '#3b3d41';
 const syncSubtaskBadgeColor = '#385f4e';
 const completedBadgeColor = '#a66a0c';
 
+function createBadge(textContent, badgeColor, clickCallback) {
+  const badgeElement = document.createElement('span');
+  badgeElement.textContent = textContent;
+  Object.keys(badgeStyle).forEach(key => {
+    badgeElement.style[key] = badgeStyle[key];
+  });
+  badgeElement.style.background = badgeColor;
+  badgeElement.addEventListener('click', clickCallback, false);
+  return badgeElement;
+}
 
-// Board
-// バッジの表示 (カード表示時)
+function handleTitleModification(titleTextArea, pattern, replacement) {
+  titleTextArea.focus();
+
+  if (pattern.test(titleTextArea.value)) {
+    titleTextArea.value = titleTextArea.value.replace(pattern, replacement);
+  } else if (replacement) {  // If there is a replacement but no match in the titleTextArea
+    titleTextArea.value = replacement + titleTextArea.value;
+  }
+
+
+  var evt = document.createEvent('KeyboardEvent');
+  evt.initEvent('input', true, false);
+  // adding this created a magic and passes it as if keypressed
+  titleTextArea.dispatchEvent(evt);
+  titleTextArea.blur()
+}
+
+function clearBadgeHandler() {
+  const titleTextArea = document.querySelector('.simpleTextarea--dynamic');
+  if (!titleTextArea) return;
+  handleTitleModification(titleTextArea, /^\(.+\) /, '');
+  handleTitleModification(titleTextArea, / \[.+\]/, '');
+}
+
+function syncSubtaskHandler() {
+  const titleTextArea = document.querySelector('.simpleTextarea--dynamic');
+  if (!titleTextArea) return;
+
+  const subtasks = document.querySelectorAll('.TaskList > .DropTargetRow');
+  let subtasksNotCompletedStoryPoint = 0, subtasksCompletedStoryPoint = 0;
+
+  subtasks.forEach(subtask => {
+    const isCompleted = !!subtask.querySelector('.TaskRowCompletionStatus-checkbox--complete');
+    const subtaskTitleElement = subtask.querySelector('.AutogrowTextarea-shadow');
+    if (subtaskTitleElement) {
+      const spMatched = subtaskTitleElement.textContent.match(/^\((\d+(?:\.\d+)?)\)/);
+      if (spMatched) {
+        if (isCompleted) {
+          subtasksCompletedStoryPoint += Number(spMatched[1]);
+        }
+        subtasksNotCompletedStoryPoint += Number(spMatched[1]);
+      }
+    }
+  });
+
+  const titlePrefix = subtasksNotCompletedStoryPoint ? `(${subtasksNotCompletedStoryPoint}) ` : '';
+  const titlePostfix = subtasksCompletedStoryPoint ? ` [${subtasksCompletedStoryPoint}]` : '';
+  handleTitleModification(titleTextArea, /^\(.+\) /, titlePrefix);
+  handleTitleModification(titleTextArea, / \[.+\]/, titlePostfix);
+}
+
+
+// Add badges to card detail panel
 setInterval(() => {
-    // 操作するエレメント
-    const bodyContainerPromise = getElementUntilRendered(document,'.TaskPaneFields', 100)
-    const titleTextAreaPromise = getElementUntilRendered(document,'.simpleTextarea--dynamic', 100)
+  const bodyContainer = document.querySelector('.TaskPaneFields');
+  const titleTextArea = document.querySelector('.simpleTextarea--dynamic');
 
-if(bodyContainerPromise.PromiseState == 'rejected' || titleTextAreaPromise.PromiseState == 'rejected'){ return; }
+  if (!bodyContainer || !titleTextArea) return;
+  if (document.getElementsByClassName('badge-container').length) return;
 
-    // 操作するエレメントがすべて取得できたら (カード表示時)
-    Promise.all([bodyContainerPromise, titleTextAreaPromise])
-		.catch(error => 
-		{
-			return [null, null];  // Default values to avoid erroring in the `then`
-		})
-        .then(([bodyContainer, titleTextArea]) => {
-            // 既にバッジが表示されているか
-            const hasBadgeContainer = document.getElementsByClassName('badge-container').length !== 0
-            if(hasBadgeContainer){
-                return ;
-            }
+  const badgeElements = SP_BADGES.map(badgeValue => {
+    return createBadge(badgeValue, badgeStyle.background, (e) => {
+      handleTitleModification(titleTextArea, /^\(.+\) /, `(${badgeValue}) `);
+    });
+  });
 
-            // バッジの生成
-            const badgeElements = SP_BADGES.map(e => {
-                const badgeElement = document.createElement('span')
-                badgeElement.textContent = e
-                Object.keys(badgeStyle).forEach(key => {
-                    badgeElement.style[key] = badgeStyle[key]
-                })
-                badgeElement.addEventListener('click', function(e){
-                    titleTextArea.focus()
-                    titleTextArea.value = '(' + e.target.textContent + ') ' + titleTextArea.value.replace(/^\(.+\) /, '')
-                    var evt = document.createEvent('KeyboardEvent');
-                    evt.initEvent('input', true, false);
-                    // adding this created a magic and passes it as if keypressed
-                    titleTextArea.dispatchEvent(evt);
-                    titleTextArea.blur()
-                }, false)
-                return badgeElement
-            })
-            // クリアバッジの生成
-            const clearBadge = (()=>{
-                const badgeElement = document.createElement('span')
-                badgeElement.textContent = 'X'
-                Object.keys(badgeStyle).forEach(key => {
-                    badgeElement.style[key] = badgeStyle[key]
-                })
-                badgeElement.style.background = clearBadgeColor
+  badgeElements.unshift(createBadge('X', clearBadgeColor, clearBadgeHandler));
+  badgeElements.push(createBadge('Sync ↑', syncSubtaskBadgeColor, syncSubtaskHandler));
 
-                badgeElement.addEventListener('click', function(e){
-                    titleTextArea.focus()
-                    titleTextArea.value = titleTextArea.value.replace(/^\(.+\) /, '').replace(/ \[.+\]/, '')
-                    var evt = document.createEvent('KeyboardEvent');
-                    evt.initEvent('input', true, false);
-                    // adding this created a magic and passes it as if keypressed
-                    titleTextArea.dispatchEvent(evt);
-                    titleTextArea.blur()
-                }, false)
-                return badgeElement
-            })()
-            badgeElements.unshift(clearBadge);
-            // サブタスク更新バッジの生成 (ボタンを押すとサブタスクにセットしたSPを計算しこのタスクのSPにセットする)
-            const syncSubtaskBadge = (()=>{
-                const badgeElement = document.createElement('span')
-                badgeElement.textContent = 'Sync ↑'
-                Object.keys(badgeStyle).forEach(key => {
-                    badgeElement.style[key] = badgeStyle[key]
-                })
-                badgeElement.style.background = syncSubtaskBadgeColor
+  // Construct and insert the badge container
+  let badgeContainer = document.createElement('div');
+  badgeContainer.style.display = 'flex';
+  badgeContainer.style.margin = '2px 10px';
+  badgeContainer.className = 'badge-container LabeledRowStructure-right';
+  badgeElements.forEach(element => badgeContainer.appendChild(element));
 
-                badgeElement.addEventListener('click', function(e){
-                    // サブタスクのSPを集計
-                    const subtasks = document.querySelectorAll('.TaskList > .DropTargetRow')
-                    let subtasksNotCompletedStoryPoint = 0, subtasksCompletedStoryPoint = 0;
-                    Array.prototype.forEach.call(subtasks, e => {
-                        const isCompleted = !!e.querySelector('.TaskRowCompletionStatus-checkbox--complete')
-                        const subtaskTitleElement = e.querySelector('.AutogrowTextarea-shadow')
-                        if(subtaskTitleElement){
-                            const sp_matched = subtaskTitleElement.textContent.match(/^\((\d+(?:\.\d+)?)\)/)
-                            if(sp_matched){
-                                if(isCompleted) {
-                                    subtasksCompletedStoryPoint += Number(sp_matched[1])
-                                }
-                                subtasksNotCompletedStoryPoint += Number(sp_matched[1])
-                            }
-                        }
-                    })
-                    const titlePrefix = (() => {
-                        if(subtasksNotCompletedStoryPoint){
-                            return '(' + subtasksNotCompletedStoryPoint + ') '
-                        }
-                        return ''
-                    })()
-                    const titlePostfix = (() => {
-                        if(subtasksCompletedStoryPoint){
-                            return ' [' + subtasksCompletedStoryPoint + ']'
-                        }
-                        return ''
-                    })()
+  // Constructing the entire field container
+  let fieldContainer = document.createElement('div');
+  fieldContainer.className = 'LabeledRowStructure';
 
+  const rightColumn = document.createElement('div');
+  rightColumn.style.width = '100px';
+  rightColumn.className = 'LabeledRowStructure-left';
+  const label = document.createElement('label');
+  label.className = 'LabeledRowStructure-label';
+  label.textContent = 'Estimated time';
+  rightColumn.appendChild(label);
 
-                    // 編集
-                    titleTextArea.focus()
-                    titleTextArea.value = titlePrefix + titleTextArea.value.replace(/^\(.+\) /, '').replace(/ \[.+\]/, '') + titlePostfix
-                    var evt = document.createEvent('KeyboardEvent');
-                    evt.initEvent('input', true, false);
-                    // adding this created a magic and passes it as if keypressed
-                    titleTextArea.dispatchEvent(evt);
-                    titleTextArea.blur()
-                }, false)
-                return badgeElement
-            })()
-            badgeElements.push(syncSubtaskBadge);
+  fieldContainer.appendChild(rightColumn);
+  fieldContainer.appendChild(badgeContainer);
 
-            // バッジコンテナの生成
-            let badgeContainer = document.createElement('div')
-            badgeContainer.style.display = 'flex'
-            badgeContainer.style.margin = '2px 10px'
-            badgeContainer.className = 'badge-container LabeledRowStructure-right'
+  // Insert fieldContainer above the last child of bodyContainer
+  bodyContainer.insertBefore(fieldContainer, bodyContainer.lastElementChild);
 
-            // バッジコンテナにバッジの挿入
-            badgeElements.forEach(e => {
-                badgeContainer.appendChild(e)
-            })
+}, 1000);
 
-            // バッジコンテナをDOMに設置
-            // fixed 20.01.19  2 column style
-            let fieldContainer = document.createElement('div')
-            fieldContainer.className = 'LabeledRowStructure'
-            const rightColumn = (() => {
-              let labelContainer = document.createElement('div')
-              labelContainer.style.width = '100px'
-              labelContainer.className = 'LabeledRowStructure-left'
-              let label = document.createElement('label')
-              label.className = 'LabeledRowStructure-label'
-              label.textContent = 'Estimated time'
-              labelContainer.appendChild(label)
-              return labelContainer
-            })()
-            fieldContainer.appendChild(rightColumn)
-            fieldContainer.appendChild(badgeContainer)
-
-            // descriptionの上に追加
-			if(bodyContainer){
-				const fields = bodyContainer.children
-				bodyContainer.insertBefore(fieldContainer, fields[fields.length-1])
-			}
-        })
-}, 1000)
 
 // Display point totals by card row on the board at the top
 setInterval(() => {
