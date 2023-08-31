@@ -8,7 +8,19 @@
  */
 
 // Constants
-const SP_BADGES = ['🚧', '🏁', '🚩', '0.25','0.5','1','2','3','5','7']
+const SP_NUMBER_BADGES = ['0.25', '0.5', '1', '2', '3', '5', '7'];
+const SP_EMOJI_BADGES = ['🏁', '🚩', '🚧', '🔁', '⚓', '❌', '✅', '⭐'];
+const EMOJI_DESCRIPTIONS = {
+  '🚧': 'Blocked (link to or describe blocker)',
+  '🏁': 'Milestone (collection of epics)',
+  '🚩': 'Epic (collection of tasks)',
+  '🔁': 'Recurring',
+  '⚓': 'Must be this date',
+  '❌': 'Failed',
+  '✅': 'Completed',
+  '⭐': 'Important'
+};
+
 const badgeStyle = {
     background: '#252628',
     borderRadius: '2px',
@@ -45,6 +57,12 @@ function createBadge(textContent, badgeColor, clickCallback) {
   });
   badgeElement.style.background = badgeColor;
   badgeElement.addEventListener('click', clickCallback, false);
+
+  // Add title for tooltip
+  if (EMOJI_DESCRIPTIONS[textContent]) {
+    badgeElement.setAttribute('title', EMOJI_DESCRIPTIONS[textContent]);
+  }
+
   return badgeElement;
 }
 
@@ -99,6 +117,36 @@ function syncSubtaskHandler() {
   handleTitleModification(titleTextArea, / \[.+\]/, titlePostfix);
 }
 
+function emojiBadgeHandler(emoji) {
+  const titleTextArea = document.querySelector('.simpleTextarea--dynamic');
+  if (!titleTextArea) return;
+
+  // Check if the emoji is already present
+  const emojiPattern = new RegExp(`\\s?${escapeRegExp(emoji)}\\s?`, 'g');
+  if (emojiPattern.test(titleTextArea.value)) {
+    // If present, remove it
+    titleTextArea.value = titleTextArea.value.replace(emojiPattern, ' ').trim();
+  } else {
+    // Otherwise, insert it
+    const existingBadgeMatch = titleTextArea.value.match(/^\(([^)]+)\)/);
+    if (existingBadgeMatch) {
+      titleTextArea.value = titleTextArea.value.replace(existingBadgeMatch[0], `${existingBadgeMatch[0]} ${emoji}`);
+    } else {
+      titleTextArea.value = `${emoji} ${titleTextArea.value}`;
+    }
+  }
+
+  var evt = document.createEvent('KeyboardEvent');
+  evt.initEvent('input', true, false);
+  titleTextArea.dispatchEvent(evt);
+  titleTextArea.blur();
+}
+
+// Helper function to escape regex special characters
+function escapeRegExp(string) {
+  return string.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
+
 
 // Add badges to card detail panel
 setInterval(() => {
@@ -108,39 +156,66 @@ setInterval(() => {
   if (!bodyContainer || !titleTextArea) return;
   if (document.getElementsByClassName('badge-container').length) return;
 
-  const badgeElements = SP_BADGES.map(badgeValue => {
+  const numberBadgeElements = SP_NUMBER_BADGES.map(badgeValue => {
     return createBadge(badgeValue, badgeStyle.background, (e) => {
       handleTitleModification(titleTextArea, /^\(.+\) /, `(${badgeValue}) `);
     });
   });
 
-  badgeElements.unshift(createBadge('X', clearBadgeColor, clearBadgeHandler));
-  badgeElements.push(createBadge('Sync ↑', syncSubtaskBadgeColor, syncSubtaskHandler));
+  const emojiBadgeElements = SP_EMOJI_BADGES.map(emoji => {
+    return createBadge(emoji, badgeStyle.background, (e) => {
+      emojiBadgeHandler(emoji);
+    });
+  });
 
-  // Construct and insert the badge container
-  let badgeContainer = document.createElement('div');
-  badgeContainer.style.display = 'flex';
-  badgeContainer.style.margin = '2px 10px';
-  badgeContainer.className = 'badge-container LabeledRowStructure-right';
-  badgeElements.forEach(element => badgeContainer.appendChild(element));
+  numberBadgeElements.unshift(createBadge('X', clearBadgeColor, clearBadgeHandler));
+  numberBadgeElements.push(createBadge('Sync ↑', syncSubtaskBadgeColor, syncSubtaskHandler));
 
-  // Constructing the entire field container
-  let fieldContainer = document.createElement('div');
-  fieldContainer.className = 'LabeledRowStructure';
+  let numberBadgeContainer = document.createElement('div');
+  numberBadgeContainer.style.display = 'flex';
+  numberBadgeContainer.style.margin = '2px 10px';
+  numberBadgeContainer.className = 'badge-container LabeledRowStructure-right';
+  numberBadgeElements.forEach(element => numberBadgeContainer.appendChild(element));
 
-  const rightColumn = document.createElement('div');
-  rightColumn.style.width = '100px';
-  rightColumn.className = 'LabeledRowStructure-left';
-  const label = document.createElement('label');
-  label.className = 'LabeledRowStructure-label';
-  label.textContent = 'Estimated time';
-  rightColumn.appendChild(label);
+  let emojiBadgeContainer = document.createElement('div');
+  emojiBadgeContainer.style.display = 'flex';
+  emojiBadgeContainer.style.margin = '2px 10px';
+  emojiBadgeContainer.className = 'badge-container LabeledRowStructure-right';
+  emojiBadgeElements.forEach(element => emojiBadgeContainer.appendChild(element));
 
-  fieldContainer.appendChild(rightColumn);
-  fieldContainer.appendChild(badgeContainer);
+  // Constructing the number badge field container
+  let numberFieldContainer = document.createElement('div');
+  numberFieldContainer.className = 'LabeledRowStructure';
 
-  // Insert fieldContainer above the last child of bodyContainer
-  bodyContainer.insertBefore(fieldContainer, bodyContainer.lastElementChild);
+  const numberRightColumn = document.createElement('div');
+  numberRightColumn.style.width = '100px';
+  numberRightColumn.className = 'LabeledRowStructure-left';
+  const numberLabel = document.createElement('label');
+  numberLabel.className = 'LabeledRowStructure-label';
+  numberLabel.textContent = 'Estimated time';
+  numberRightColumn.appendChild(numberLabel);
+
+  numberFieldContainer.appendChild(numberRightColumn);
+  numberFieldContainer.appendChild(numberBadgeContainer);
+
+  // Constructing the emoji badge field container
+  let emojiFieldContainer = document.createElement('div');
+  emojiFieldContainer.className = 'LabeledRowStructure';
+
+  const emojiRightColumn = document.createElement('div');
+  emojiRightColumn.style.width = '100px';
+  emojiRightColumn.className = 'LabeledRowStructure-left';
+  const emojiLabel = document.createElement('label');
+  emojiLabel.className = 'LabeledRowStructure-label';
+  emojiLabel.textContent = 'Emoji Label';
+  emojiRightColumn.appendChild(emojiLabel);
+
+  emojiFieldContainer.appendChild(emojiRightColumn);
+  emojiFieldContainer.appendChild(emojiBadgeContainer);
+
+  // Insert fieldContainers above the last child of bodyContainer
+  bodyContainer.insertBefore(numberFieldContainer, bodyContainer.lastElementChild);
+  bodyContainer.insertBefore(emojiFieldContainer, bodyContainer.lastElementChild);
 
 }, 1000);
 
