@@ -7,7 +7,7 @@
  */
 
 // Constants
-const SP_NUMBER_BADGES = ['0.25', '0.5', '1', '2', '3', '5', '7'];
+const SP_NUMBER_BADGES = ['0.25', '0.5', '1', '2', '3', '5', '7', '?'];
 const SP_EMOJI_BADGES = ['🏁', '🚩', '🔁', '📅', '🚧', '⚓', '❌', '✅', '⭐'];
 const EMOJI_DESCRIPTIONS = {
   '🏁': 'Milestone (collection of epics)',
@@ -87,7 +87,7 @@ function clearBadgeHandler() {
   const titleTextArea = document.querySelector('.simpleTextarea--dynamic');
   if (!titleTextArea) return;
   handleTitleModification(titleTextArea, /^\(.+\) /, '');
-  handleTitleModification(titleTextArea, / \[.+\]/, '');
+  //handleTitleModification(titleTextArea, / \[.+\]/, '');
 }
 
 function syncSubtaskHandler() {
@@ -114,7 +114,7 @@ function syncSubtaskHandler() {
   const titlePrefix = subtasksNotCompletedStoryPoint ? `(${subtasksNotCompletedStoryPoint}) ` : '';
   const titlePostfix = subtasksCompletedStoryPoint ? ` [${subtasksCompletedStoryPoint}]` : '';
   handleTitleModification(titleTextArea, /^\(.+\) /, titlePrefix);
-  handleTitleModification(titleTextArea, / \[.+\]/, titlePostfix);
+  //handleTitleModification(titleTextArea, / \[.+\]/, titlePostfix);
 }
 
 function emojiBadgeHandler(emoji) {
