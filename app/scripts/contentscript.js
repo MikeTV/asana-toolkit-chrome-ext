@@ -1,20 +1,20 @@
 'use strict';
 
 /* TODO: 
- *		Update manifest to v3
- *      Show summaries on daily calendar, not just lists
- *		Milestone/etc emoji lives outside of ()
+ *    Show summaries on daily calendar, not just lists
  *		Translate comments	 
+ *    Refactor the rest of the code for maintainability
  */
 
 // Constants
 const SP_NUMBER_BADGES = ['0.25', '0.5', '1', '2', '3', '5', '7'];
-const SP_EMOJI_BADGES = ['🏁', '🚩', '🚧', '🔁', '⚓', '❌', '✅', '⭐'];
+const SP_EMOJI_BADGES = ['🏁', '🚩', '🔁', '📅', '🚧', '⚓', '❌', '✅', '⭐'];
 const EMOJI_DESCRIPTIONS = {
-  '🚧': 'Blocked (link to or describe blocker)',
   '🏁': 'Milestone (collection of epics)',
   '🚩': 'Epic (collection of tasks)',
   '🔁': 'Recurring',
+  '📅': 'Meeting',
+  '🚧': 'Blocked (link to or describe blocker)',
   '⚓': 'Must be this date',
   '❌': 'Failed',
   '✅': 'Completed',
