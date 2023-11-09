@@ -8,7 +8,7 @@
 
 // Constants
 const SP_NUMBER_BADGES = ['0.25', '0.5', '1', '2', '3', '5', '7', '?'];
-const SP_EMOJI_BADGES = ['🏁', '🚩', '🔁', '📅', '🚧', '⚓', '❌', '✅', '⭐'];
+const SP_EMOJI_BADGES = ['🏁', '🚩', '🔁', '📅', '🚧', '⚓', '❌', '✅', '⭐', '📝'];
 const EMOJI_DESCRIPTIONS = {
   '🏁': 'Milestone (collection of epics)',
   '🚩': 'Epic (collection of tasks)',
