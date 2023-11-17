@@ -17,8 +17,9 @@ const EMOJI_DESCRIPTIONS = {
   '🚧': 'Blocked (link to or describe blocker)',
   '⚓': 'Must be this date',
   '❌': 'Failed',
-  '✅': 'Completed',
-  '⭐': 'Important'
+  '✅': 'Successful',
+  '⭐': 'Important',
+  '📝': 'Has notes for future reference'
 };
 
 const badgeStyle = {
